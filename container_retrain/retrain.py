@@ -18,6 +18,8 @@ import argparse
 
 # Features
 
+MAIN_ID = "id"
+
 NUMERICAL_FEATURES = [
     'age',
     'balance',
@@ -187,7 +189,8 @@ class MinMaxScalerTransformer(BaseEstimator, TransformerMixin):
 
 class XGBClassifierTransformer(BaseEstimator, TransformerMixin):
     
-    def __init__(self, target_feature, estimators=500):
+    def __init__(self, main_id, target_feature, estimators=500):
+        self.main_id = main_id
         self.target_feature = target_feature
         self.estimators = estimators
         
@@ -224,14 +227,16 @@ class XGBClassifierTransformer(BaseEstimator, TransformerMixin):
         pred_X = self.classifier.predict_proba(X_copy[self.model_features].values)[:,1]
         binary_X = (pred_X > self.best_threshold).astype(int)
         
-        predictions = pd.DataFrame(data={"prediction_float":pred_X, "prediction_boolean":binary_X}, index=X_copy.index)        
+        predictions = pd.DataFrame(data={"id":X_copy[self.main_id].values, "prediction_float":pred_X, "prediction_boolean":binary_X}, index=X_copy.index)        
         
         return predictions
 
 def retrain(test_mode=True):
 
+    # TODO: Include ID for record so api can send it too
+
     # Load data
-    dataset = pd.read_csv("data/dataset.csv", index_col=0)
+    dataset = pd.read_csv("data/dataset.csv")
 
     # Fill nan values from categorical features    
     dataset.fillna('unknown', inplace=True)
@@ -269,6 +274,7 @@ def retrain(test_mode=True):
             ),
             
             ('xgboost_classfier',  XGBClassifierTransformer(
+                main_id=MAIN_ID,
                 target_feature=TARGET_FEATURE)
             )
         ]
@@ -280,7 +286,7 @@ def retrain(test_mode=True):
     # Save pipeline in dill file if not in test mode
     if not(test_mode):
         with open("current_model.dill", "wb") as f_:
-            dill.dump(pipeline, f_)
+            dill.dump(pipeline, f_, recurse=True)
 
 if __name__ == '__main__':
 

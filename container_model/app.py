@@ -10,6 +10,7 @@ import dill
 
 # Input features class
 class ModelInputFeatures(BaseModel):
+    id: str
     age: int
     balance: int
     duration: int
@@ -28,6 +29,7 @@ class ModelInputFeatures(BaseModel):
     poutcome: str
 
 class ModelOutputFeatures(BaseModel):
+    id: str
     prediction_float: float
     prediction_boolean: int
 
